@@ -2,7 +2,7 @@
 import subprocess
 import os
 
-libname = 
+libname = 'db_fillers'
 
 
 with open('setup.py','r') as f:
