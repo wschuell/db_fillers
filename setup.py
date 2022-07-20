@@ -23,4 +23,6 @@ setup(name='db_fillers',
       description='',
       url='',
       license='GNU AFFERO GENERAL PUBLIC LICENSE Version 3',
+      include_package_data=True,
       )
+      
