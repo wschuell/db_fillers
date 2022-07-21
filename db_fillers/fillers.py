@@ -166,5 +166,3 @@ class TestFiller(Filler):
 		filename = url.split('/')[-1]
 		self.download(url)
 		self.record_file(filename=filename,filecode='test_file')
-
-		self.
