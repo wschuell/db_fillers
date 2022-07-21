@@ -1,1 +1,2 @@
-recursive-include PYLIB *.py
+recursive-include db_fillers *.py
+include db_fillers/*.sql
