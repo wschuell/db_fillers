@@ -4,6 +4,7 @@ import glob
 
 import db_fillers as dbf
 from db_fillers import fillers
+from db_fillers import Database
 
 conninfo = {
 	'host':'localhost',
