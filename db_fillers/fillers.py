@@ -144,3 +144,12 @@ class Filler(object):
 		self.db.record_file(folder=self.data_folder,**kwargs)
 
 
+
+def TestFiller(Filler):
+	'''
+	A Filler just for testing purposes
+	'''
+
+	def prepare(self,**kwargs):
+		Filler.prepare(self,**kwargs)
+		self.download('https://github.com/wschuell/db_fillers/blob/main/README.md')
