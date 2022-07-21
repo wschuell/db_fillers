@@ -76,8 +76,11 @@ class Filler(object):
 		pass
 
 
-	def download(self,url,destination,wget=False):
+	def download(self,url,destination=None,wget=False):
 		self.logger.info('Downloading {}'.format(url))
+		if destination is None:
+			destination = url.split('/')[-1]
+		destination = os.path.join(self.data_folder,destination)
 		if not wget:
 			r = requests.get(url, allow_redirects=True)
 			r.raise_for_status()
@@ -105,8 +108,11 @@ class Filler(object):
 		else:
 			raise ValueError(f'File extension not recognized for spreadsheet: {file_ext}')
 
-	def convert_spreadsheet(self,orig_file,destination,clean_orig=False,engine=None):
+	def convert_spreadsheet(self,orig_file,destination=None,clean_orig=False,engine=None):
 		self.logger.info('Converting {} to CSV'.format(orig_file))
+		if destination is None:
+			destination = '.'.join(orig_file.split('.')[:-1]+['csv'])
+		destination = os.path.join(self.data_folder,destination)
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
 		data = pd.read_excel(orig_file, index_col=None, engine=engine)
@@ -114,13 +120,17 @@ class Filler(object):
 		if clean_orig:
 			os.remove(orig_file)
 
-	def convert_spreadhseet_sheets(self,orig_file,destination,sheet_names = None, clean_orig=False,engine=None):
+	def convert_spreadhseet_sheets(self,orig_file,destination=None,sheet_names = None, clean_orig=False,engine=None):
 		self.logger.info('Converting {} sheets to CSVs'.format(orig_file))
+		
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
 		data = pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names)
 
 		names = list(data.keys())
+		if destination is None:
+			destination = '.'.join(orig_file.split('.')[:-1])
+		destination = os.path.join(self.data_folder,destination)
 		if not os.path.exists(destination):
 			os.makedirs(destination)
 		for name in names:
@@ -137,19 +147,24 @@ class Filler(object):
 		return pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names)
 
 
-	def record_file(self,**kwargs):
+	def record_file(self,filename,filecode,**kwargs):
 		'''
 		Wrapper to solve data_folder mismatch with DB
 		'''
-		self.db.record_file(folder=self.data_folder,**kwargs)
+		self.db.record_file(folder=self.data_folder,filename=filename,filecode=filecode,**kwargs)
 
 
 
-def TestFiller(Filler):
+class TestFiller(Filler):
 	'''
 	A Filler just for testing purposes
 	'''
 
 	def prepare(self,**kwargs):
 		Filler.prepare(self,**kwargs)
-		self.download('https://github.com/wschuell/db_fillers/blob/main/README.md')
+		url = 'https://www.google.fr/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png'
+		filename = url.split('/')[-1]
+		self.download(url)
+		self.record_file(filename=filename,filecode='test_file')
+
+		self.
