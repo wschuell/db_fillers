@@ -2,11 +2,8 @@ import pytest
 import os
 import glob
 
-import syri_db as sdb
-from syri_db import Database
-from syri_db.fillers import nodes,systemic_risk,zones,generic
-# from syri_db.fillers import jrclive
-from syri_db.views import views_script
+import db_fillers as dbf
+from db_fillers import fillers
 
 conninfo = {
 	'host':'localhost',
