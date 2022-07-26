@@ -66,6 +66,13 @@ class Database(object):
 					for e in ('"',"'"):
 						if e in s:
 							raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
+				temp_db = self.__class__(data_folder=data_folder,db_schema=None,fallback_db=fallback_db,**db_conninfo)
+				temp_db.cursor.execute('SELECT schema_name FROM information_schema.schemata;')
+				schemas = [s for s in temp_db.cursor.fetchall()]
+				if db_schema not in schemas:
+					self.check_sqlname_safe(db_schema)
+					temp_db.cursor.execute('CREATE SCHEMA IF NOT EXISTS {};'.format(db_schema))
+					temp_db.connection.commit()
 				self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s) for s in searchpath])
 
 		if 'password' in self.db_conninfo.keys():
@@ -118,8 +125,9 @@ class Database(object):
 	def init_db(self):
 		# for cmd in split_sql_init(self.DB_INIT)+split_sql_init(self.pre_initscript)+split_sql_init(self.post_initscript):
 		for cmd in (self.pre_initscript,self.DB_INIT,self.post_initscript):
-			self.logger.debug(cmd)
-			self.cursor.execute(cmd)
+			if cmd != '' and cmd is not None:
+				self.logger.debug(cmd)
+				self.cursor.execute(cmd)
 		if self.register_exec:
 			self.register_exec_content()
 		self.connection.commit()
@@ -155,7 +163,9 @@ class Database(object):
 		ans = self.cursor.fetchone()
 		return (ans is None)
 
-
+	@classmethod
+	def check_sqlname_safe(cls,s):
+		assert s == ''.join( c for c in s if c.isalnum() or c in ('_',) ), '{} is not passing the check against SQL injection'.format(s)
 
 ########### files management
 	def record_file(self,filename,filecode,folder=None):
