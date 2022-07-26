@@ -28,10 +28,6 @@ except ImportError:
 
 
 
-with open(os.path.join(os.path.dirname(__file__),'init_script.sql'),'r') as f:
-	DB_INIT = f.read()
-
-
 def split_sql_init(script):
 	lines = script.split('\n')
 	formatted = '\n'.join([l for l in lines if l[:2]!='--'])
@@ -44,21 +40,47 @@ class Database(object):
 	The object uses a specific data folder and a list of files used for the fillers, with name, keyword, and potential download link. (move to filler class?)
 	"""
 
-	def __init__(self,pre_initscript='',post_initscript='',data_folder='./datafolder',register_exec=True,**db_conninfo):
+	def __init__(self,pre_initscript='',post_initscript='',data_folder='./datafolder',register_exec=True,db_schema=None,additional_searchpath=None,DB_INIT=None,fallback_db='postgres',**db_conninfo):
 		self.logger = logger
 		self.db_conninfo = copy.deepcopy(db_conninfo) # db_conninfo can be partly defined in ~/.pgpass, especially for passwords. See postgres doc for more info.
+
+		if DB_INIT is None:
+			init_sql_file = os.path.join(os.path.dirname(inspect.getfile(self.__class__)),'initscript.sql')
+			if not os.path.exists(init_sql_file):
+				raise IOError(f'Missing file: {init_sql_file}')
+			with open(init_sql_file,'r') as f:
+				self.DB_INIT = f.read()
+		else:
+			self.DB_INIT = DB_INIT
+
+		if db_schema is not None or additional_searchpath is not None:
+			if 'options' in self.db_conninfo.keys()
+				raise SyntaxError('You provided a schema and/or a search_path while also providing the "options" argument in the connection info string, resolving potential conflicts there is not implemented.')
+			else:
+				if db_schema is None:
+					db_schema = 'public'
+				if additional_searchpath is None:
+					additional_searchpath = []
+				searchpath = [db_schema] + additional_searchpath
+				for s in searchpath:
+					for e in ('"',"'"):
+						if e in s:
+							raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
+				self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s) for s in searchpath])
+
 		if 'password' in self.db_conninfo.keys():
 			logger.warning('You are providing your password directly, this could be a security concern, consider using solutions like .pgpass file.')
 		try:
 			self.connection = psycopg2.connect(**self.db_conninfo)
 		except psycopg2.OperationalError as e:
-			if 'FATAL:  database "{}" does not exist\n'.format(db_conninfo['database']) == str(e):
+			if 'database "{}" does not exist\n'.format(db_conninfo['database']) in str(e):
 				pgpass_env = 'PGPASSFILE'
 				default_pgpass = os.path.join(os.environ['HOME'],'.pgpass')
 				if pgpass_env not in os.environ.keys():
 					os.environ[pgpass_env] = default_pgpass
 				conninfo_nodb = copy.deepcopy(self.db_conninfo)
-				conninfo_nodb['database'] = 'postgres'
+				conninfo_nodb['database'] = fallback_db
+				self.logger.warning('Database {} does not exist: trying to create it via connecting primarily to database {}'.format(db_conninfo['database'],conninfo_nodb['database']))
 				conn = psycopg2.connect(**conninfo_nodb)
 				conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 				cur = conn.cursor()
