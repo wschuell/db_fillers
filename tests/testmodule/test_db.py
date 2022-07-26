@@ -38,3 +38,14 @@ def test_filler(maindb,tmpdir):
 	maindb.add_filler(fillers.TestFiller(data_folder=tmpdir))
 	maindb.fill_db()
 
+def test_schema():
+	db = Database(db_schema='test_schema',**conninfo)
+	db.init_db()
+	yield db
+	db.connection.close()
+
+def test_searchpath():
+	db = Database(db_schema='test_schema',additional_searchpath=['test__db_fillers'],**conninfo)
+	db.init_db()
+	yield db
+	db.connection.close()

@@ -54,7 +54,7 @@ class Database(object):
 			self.DB_INIT = DB_INIT
 
 		if db_schema is not None or additional_searchpath is not None:
-			if 'options' in self.db_conninfo.keys()
+			if 'options' in self.db_conninfo.keys():
 				raise SyntaxError('You provided a schema and/or a search_path while also providing the "options" argument in the connection info string, resolving potential conflicts there is not implemented.')
 			else:
 				if db_schema is None:
