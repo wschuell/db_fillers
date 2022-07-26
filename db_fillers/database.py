@@ -116,7 +116,7 @@ class Database(object):
 		self.connection.commit()
 
 	def init_db(self):
-		for cmd in split_sql_init(DB_INIT)+split_sql_init(self.pre_initscript)+split_sql_init(self.post_initscript):
+		for cmd in split_sql_init(self.DB_INIT)+split_sql_init(self.pre_initscript)+split_sql_init(self.post_initscript):
 			self.logger.debug(cmd)
 			self.cursor.execute(cmd)
 		if self.register_exec:
