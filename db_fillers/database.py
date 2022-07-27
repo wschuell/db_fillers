@@ -184,19 +184,23 @@ class Database(object):
 		self.cursor.execute('INSERT INTO file_hash(filecode,filename,filehash) VALUES(%s,%s,%s) ON CONFLICT (filecode) DO UPDATE SET filecode=EXCLUDED.filecode,filename=EXCLUDED.filename,filehash=EXCLUDED.filehash;',(filecode,filename,filehash))
 
 	def register_exec_content(self):
-		import __main__
-		with open(__main__.__file__,'r') as f:
-			exec_content = f.read() 
-		with open(__main__.__file__,"rb") as f:
-			exec_hash = hashlib.sha256(f.read()).hexdigest()
-		if 'password' in exec_content.lower():
-			raise ValueError('Password should not be provided in exec file, especially if content is registered!')
+		try:
+			import __main__
+		except ImportError:
+			self.logger.warning('Trying to log exec script, but cannot import __main__, execution is not a typical python script execution, skipping')
 		else:
-			self.cursor.execute('''
-				INSERT INTO _exec_info(content,content_hash)
-				VALUES (%s,%s);
-				''',(exec_content,exec_hash))
-			self.connection.commit()
+			with open(__main__.__file__,'r') as f:
+				exec_content = f.read()
+			with open(__main__.__file__,"rb") as f:
+				exec_hash = hashlib.sha256(f.read()).hexdigest()
+			if 'password' in exec_content.lower():
+				raise ValueError('Password should not be provided in exec file, especially if content is registered!')
+			else:
+				self.cursor.execute('''
+					INSERT INTO _exec_info(content,content_hash)
+					VALUES (%s,%s);
+					''',(exec_content,exec_hash))
+				self.connection.commit()
 
 	def register_filler_content(self,filler_class,filler_args,status):
 		self.cursor.execute('''
