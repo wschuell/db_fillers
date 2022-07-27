@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-VERSIONFILE=$SCRIPT_DIR"/PYLIB/_version.py"
+VERSIONFILE=$SCRIPT_DIR"/db_fillers/_version.py"
 
 echo "Old version:"
 cat $VERSIONFILE

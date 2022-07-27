@@ -117,10 +117,11 @@ class Database(object):
 		self.pre_initscript = pre_initscript
 		self.post_initscript = post_initscript
 
-	def clean_db(self):
+	def clean_db(self,commit=True,**kwargs):
 		self.logger.info('Cleaning DB')
 		self.cursor.execute('DROP TABLE IF EXISTS data_sources CASCADE;')
-		self.connection.commit()
+		if commit:
+			self.connection.commit()
 
 	def init_db(self):
 		# for cmd in split_sql_init(self.DB_INIT)+split_sql_init(self.pre_initscript)+split_sql_init(self.post_initscript):
