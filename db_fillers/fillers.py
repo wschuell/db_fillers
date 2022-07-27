@@ -120,7 +120,7 @@ class Filler(object):
 		if clean_orig:
 			os.remove(orig_file)
 
-	def convert_spreadhseet_sheets(self,orig_file,destination=None,sheet_names = None, clean_orig=False,engine=None):
+	def convert_spreadsheet_sheets(self,orig_file,destination=None,sheet_names = None, clean_orig=False,engine=None):
 		self.logger.info('Converting {} sheets to CSVs'.format(orig_file))
 		
 		if engine is None:
