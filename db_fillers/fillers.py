@@ -120,9 +120,10 @@ class Filler(object):
 		if clean_orig:
 			os.remove(orig_file)
 
-	def convert_spreadsheet_sheets(self,orig_file,destination=None,sheet_names = None, clean_orig=False,engine=None):
+	def convert_spreadsheet_sheets(self,orig_file,destination=None,sheet_names = None, clean_sheet_names=None,clean_orig=False,engine=None):
 		self.logger.info('Converting {} sheets to CSVs'.format(orig_file))
-		
+		if clean_sheet_names is None:
+			clean_sheet_names = {}
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
 		data = pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names)
@@ -134,7 +135,11 @@ class Filler(object):
 		if not os.path.exists(destination):
 			os.makedirs(destination)
 		for name in names:
-			data[name].to_csv(os.path.join(destination,'{}.csv'.format(name)),index=False ,encoding='utf-8')
+			if name in clean_sheet_names.keys():
+				out_name = clean_sheet_names[name]
+			else:
+				out_name = name
+			data[name].to_csv(os.path.join(destination,'{}.csv'.format(out_name)),index=False ,encoding='utf-8')
 
 		if clean_orig:
 			os.remove(orig_file)
