@@ -47,3 +47,10 @@ def test_searchpath():
 	db = Database(db_schema='test_schema',additional_searchpath=['public'],**conninfo)
 	db.init_db()
 	db.connection.close()
+
+def test_clone(tmpdir):
+	f = fillers.Filler(data_folder=tmpdir)
+	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers')
+	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',update=False)
+	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',update=True)
+	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',replace=True)
