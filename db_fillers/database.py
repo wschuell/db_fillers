@@ -39,7 +39,7 @@ class Database(object):
 	To fill it, fillers are used (see Filler class).
 	The object uses a specific data folder and a list of files used for the fillers, with name, keyword, and potential download link. (move to filler class?)
 	"""
-
+	tables_whitelist = []
 	def __init__(self,pre_initscript='',post_initscript='',data_folder='./datafolder',register_exec=False,db_schema=None,additional_searchpath=None,DB_INIT=None,fallback_db='postgres',**db_conninfo):
 		self.logger = logger
 		self.db_conninfo = copy.deepcopy(db_conninfo) # db_conninfo can be partly defined in ~/.pgpass, especially for passwords. See postgres doc for more info.
@@ -117,11 +117,21 @@ class Database(object):
 		self.pre_initscript = pre_initscript
 		self.post_initscript = post_initscript
 
-	def clean_db(self,commit=True,**kwargs):
+	def clean_db(self,commit=True,extra_whitelist=[],**kwargs):
 		self.logger.info('Cleaning DB')
-		self.cursor.execute('DROP TABLE IF EXISTS data_sources CASCADE;')
+		tables = [t for t in self.get_tables() if t not in self.tables_whitelist+extra_whitelist]
+
+		for t in tables:
+			self.check_sqlname_safe(t)
+			self.cursor.execute(f'DROP TABLE IF EXISTS {t} CASCADE;')
 		if commit:
 			self.connection.commit()
+
+	def get_tables(self):
+		self.cursor.execute(
+			'''SELECT table_name FROM information_schema.tables
+			where table_schema=CURRENT_SCHEMA; ''')
+		return [t[0] for t in self.cursor.fetchall()]
 
 	def init_db(self):
 		# for cmd in split_sql_init(self.DB_INIT)+split_sql_init(self.pre_initscript)+split_sql_init(self.post_initscript):
@@ -143,10 +153,13 @@ class Database(object):
 				self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='end_prepare')
 		# for f in self.fillers:
 				if not f.done:
-					self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='init_apply')
-					f.apply()
-					f.done = True
-					self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='end_apply')
+					if not f.check_requirements():
+						raise Exception(f'Requirements not fulfilled for filler: {f.name}')
+					else:
+						self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='init_apply')
+						f.apply()
+						f.done = True
+						self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='end_apply')
 			self.logger.info('Filled with filler {}'.format(f.name))
 
 	def add_filler(self,f):

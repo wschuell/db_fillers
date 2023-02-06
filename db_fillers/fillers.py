@@ -10,6 +10,7 @@ import json
 import subprocess
 import shutil
 import pygit2
+import gzip
 
 logger = logging.getLogger('fillers')
 ch = logging.StreamHandler()
@@ -73,12 +74,14 @@ class Filler(object):
 			os.makedirs(data_folder)
 		pass
 
+	def check_requirements(self):
+		return True
 
 	def after_insert(self):
 		pass
 
 
-	def download(self,url,destination=None,wget=False):
+	def download(self,url,destination=None,wget=False,autogzip=False):
 		self.logger.info('Downloading {}'.format(url))
 		if destination is None:
 			destination = url.split('/')[-1]
@@ -86,9 +89,15 @@ class Filler(object):
 		if not wget:
 			r = requests.get(url, allow_redirects=True)
 			r.raise_for_status()
-			with open(destination, 'wb') as f:
-				f.write(r.content)
+			if autogzip:
+				with gzip.open(destination, 'wb') as f:
+					f.write(r.content)
+			else:
+				with open(destination, 'wb') as f:
+					f.write(r.content)
 		else:
+			if autogzip:
+				raise NotImplementedError('Gzipping downloaded files automatically when using wget/curl is not implemented yet')
 			try:
 				subprocess.check_call('wget -O {} {}'.format(destination,url).split(' '))
 			except:
