@@ -130,7 +130,7 @@ class Database(object):
 	def get_tables(self):
 		self.cursor.execute(
 			'''SELECT table_name FROM information_schema.tables
-			where table_schema=CURRENT_SCHEMA; ''')
+			where table_schema=CURRENT_SCHEMA AND table_type='BASE TABLE'; ''')
 		return [t[0] for t in self.cursor.fetchall()]
 
 	def init_db(self):
