@@ -118,6 +118,7 @@ class Filler(object):
 			engine = 'odf'
 		else:
 			raise ValueError(f'File extension not recognized for spreadsheet: {file_ext}')
+		return engine
 
 	def convert_spreadsheet(self,orig_file,destination=None,clean_orig=False,engine=None):
 		self.logger.info('Converting {} to CSV'.format(orig_file))
