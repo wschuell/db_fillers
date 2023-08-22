@@ -82,6 +82,9 @@ class Filler(object):
 
 
 	def download(self,url,destination=None,wget=False,autogzip=False):
+		
+		orig_file = os.path.join(self.data_folder,orig_file)
+
 		self.logger.info('Downloading {}'.format(url))
 		if destination is None:
 			destination = url.split('/')[-1]
@@ -104,6 +107,8 @@ class Filler(object):
 				subprocess.check_call('curl -o {} -L {}'.format(destination,url).split(' '))
 
 	def unzip(self,orig_file,destination,clean_zip=False):
+		orig_file = os.path.join(self.data_folder,orig_file)
+		destination = os.path.join(self.data_folder,destination)
 		self.logger.info('Unzipping {}'.format(orig_file))
 		with zipfile.ZipFile(orig_file, 'r') as zip_ref:
 			zip_ref.extractall(destination)
@@ -111,6 +116,7 @@ class Filler(object):
 			os.remove(orig_file)
 
 	def get_spreadsheet_engine(self,orig_file):
+		orig_file = os.path.join(self.data_folder,orig_file)
 		file_ext = orig_file.split('.')[-1]
 		if file_ext == 'xlsx':
 			engine = 'openpyxl'
@@ -121,6 +127,9 @@ class Filler(object):
 		return engine
 
 	def convert_spreadsheet(self,orig_file,destination=None,clean_orig=False,engine=None):
+
+		orig_file = os.path.join(self.data_folder,orig_file)
+
 		self.logger.info('Converting {} to CSV'.format(orig_file))
 		if destination is None:
 			destination = '.'.join(orig_file.split('.')[:-1]+['csv'])
@@ -133,6 +142,9 @@ class Filler(object):
 			os.remove(orig_file)
 
 	def convert_spreadsheet_sheets(self,orig_file,destination=None,sheet_names = None, clean_sheet_names=None,clean_orig=False,engine=None):
+		
+		orig_file = os.path.join(self.data_folder,orig_file)
+		
 		self.logger.info('Converting {} sheets to CSVs'.format(orig_file))
 		if clean_sheet_names is None:
 			clean_sheet_names = {}
@@ -159,6 +171,8 @@ class Filler(object):
 	def extract_spreadsheet_sheets(self,orig_file,sheet_names=None,engine=None):
 		self.logger.info('Extracting {} sheets'.format(orig_file))
 		
+		orig_file = os.path.join(self.data_folder,orig_file)
+
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
 		return pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names)

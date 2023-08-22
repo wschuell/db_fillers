@@ -54,3 +54,9 @@ def test_clone(tmpdir):
 	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',update=False)
 	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',update=True)
 	f.clone_repo(repo_url='https://github.com/wschuell/gis_fillers',replace=True)
+
+def test_download(tmpdir):
+	f = fillers.Filler(data_folder=tmpdir)
+	f.download(url='https://github.githubassets.com/images/modules/logos_page/GitHub-Logo.png',destination='githublogo.png')
+	assert os.path.exists(os.path.join(f.data_folder,'githublogo.png'))
+	

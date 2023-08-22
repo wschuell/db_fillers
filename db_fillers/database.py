@@ -39,8 +39,8 @@ class Database(object):
 	To fill it, fillers are used (see Filler class).
 	The object uses a specific data folder and a list of files used for the fillers, with name, keyword, and potential download link. (move to filler class?)
 	"""
-	tables_whitelist = []
-	def __init__(self,pre_initscript='',post_initscript='',data_folder='./datafolder',register_exec=False,db_schema=None,additional_searchpath=None,DB_INIT=None,fallback_db='postgres',**db_conninfo):
+	tables_whitelist = ['spatial_ref_sys']
+	def __init__(self,pre_initscript='',post_initscript='',data_folder='datafolder',register_exec=False,db_schema=None,additional_searchpath=None,DB_INIT=None,fallback_db='postgres',**db_conninfo):
 		self.logger = logger
 		self.db_conninfo = copy.deepcopy(db_conninfo) # db_conninfo can be partly defined in ~/.pgpass, especially for passwords. See postgres doc for more info.
 
