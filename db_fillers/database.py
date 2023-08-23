@@ -40,7 +40,7 @@ class Database(object):
 	The object uses a specific data folder and a list of files used for the fillers, with name, keyword, and potential download link. (move to filler class?)
 	"""
 	tables_whitelist = ['spatial_ref_sys']
-	def __init__(self,pre_initscript='',post_initscript='',data_folder='datafolder',register_exec=False,db_schema=None,additional_searchpath=None,DB_INIT=None,fallback_db='postgres',**db_conninfo):
+	def __init__(self,pre_initscript='',post_initscript='',data_folder='datafolder',register_exec=False,db_schema=None,additional_searchpath=['postgis'],DB_INIT=None,fallback_db='postgres',**db_conninfo):
 		self.logger = logger
 		self.db_conninfo = copy.deepcopy(db_conninfo) # db_conninfo can be partly defined in ~/.pgpass, especially for passwords. See postgres doc for more info.
 
@@ -61,19 +61,23 @@ class Database(object):
 					db_schema = 'public'
 				if additional_searchpath is None:
 					additional_searchpath = []
-				searchpath = [db_schema] + additional_searchpath
+				searchpath = [db_schema] + copy.deepcopy(additional_searchpath)
 				for s in searchpath:
-					for e in ('"',"'"):
+					for e in ('"',"'",';',','):
 						if e in s:
 							raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
-				temp_db = self.__class__(data_folder=data_folder,db_schema=None,fallback_db=fallback_db,**db_conninfo)
+				temp_conninfo = copy.deepcopy(db_conninfo)
+				temp_conninfo.update(dict(data_folder=data_folder,db_schema=None,additional_searchpath=None,fallback_db=fallback_db,))
+				print(temp_conninfo)
+				temp_db = self.__class__(**temp_conninfo)
 				temp_db.cursor.execute('SELECT schema_name FROM information_schema.schemata;')
 				schemas = [s for s in temp_db.cursor.fetchall()]
 				if db_schema not in schemas:
 					self.check_sqlname_safe(db_schema)
-					temp_db.cursor.execute('CREATE SCHEMA IF NOT EXISTS {};'.format(db_schema))
+					temp_db.cursor.execute('CREATE SCHEMA IF NOT EXISTS "{}";'.format(db_schema))
 					temp_db.connection.commit()
-				self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s) for s in searchpath])
+					temp_db.connection.close()
+				self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s.replace('"','')) for s in searchpath])
 
 		if 'password' in self.db_conninfo.keys():
 			logger.warning('You are providing your password directly, this could be a security concern, consider using solutions like .pgpass file.')
@@ -86,7 +90,8 @@ class Database(object):
 				if pgpass_env not in os.environ.keys():
 					os.environ[pgpass_env] = default_pgpass
 				conninfo_nodb = copy.deepcopy(self.db_conninfo)
-				conninfo_nodb['database'] = fallback_db
+				conninfo_nodb.update(dict(database=fallback_db))
+				# conninfo_nodb.update(dict(database=fallback_db,additional_searchpath=None,db_schema=None))
 				self.logger.warning('Database {} does not exist: trying to create it via connecting primarily to database {}'.format(db_conninfo['database'],conninfo_nodb['database']))
 				conn = psycopg2.connect(**conninfo_nodb)
 				conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)

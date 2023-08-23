@@ -83,8 +83,6 @@ class Filler(object):
 
 	def download(self,url,destination=None,wget=False,autogzip=False):
 		
-		orig_file = os.path.join(self.data_folder,orig_file)
-
 		self.logger.info('Downloading {}'.format(url))
 		if destination is None:
 			destination = url.split('/')[-1]
