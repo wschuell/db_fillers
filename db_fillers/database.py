@@ -68,7 +68,6 @@ class Database(object):
 							raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
 				temp_conninfo = copy.deepcopy(db_conninfo)
 				temp_conninfo.update(dict(data_folder=data_folder,db_schema=None,additional_searchpath=None,fallback_db=fallback_db,))
-				print(temp_conninfo)
 				temp_db = self.__class__(**temp_conninfo)
 				temp_db.cursor.execute('SELECT schema_name FROM information_schema.schemata;')
 				schemas = [s for s in temp_db.cursor.fetchall()]
