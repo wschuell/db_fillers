@@ -61,6 +61,8 @@ class Database(object):
 				searchpath = []
 			else:
 				searchpath = [db_schema]
+			
+			other_options = None
 
 			if additional_searchpath is None:
 				additional_searchpath = []
@@ -106,7 +108,7 @@ class Database(object):
 			searchpath += copy.deepcopy(additional_searchpath)
 
 			searchpath = [s.replace('"','') for s in searchpath]
-						
+
 			for s in searchpath:
 				for e in ("'",';',','):
 					if e in s:
