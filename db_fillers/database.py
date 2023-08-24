@@ -53,30 +53,75 @@ class Database(object):
 		else:
 			self.DB_INIT = DB_INIT
 
-		if db_schema is not None or additional_searchpath is not None:
-			if 'options' in self.db_conninfo.keys():
-				raise SyntaxError('You provided a schema and/or a search_path while also providing the "options" argument in the connection info string, resolving potential conflicts there is not implemented.')
+		# Schemas order : [db_schema if not None] + [options if provided or orig_searchpath(default or DB specific) ]+ additional_searchpath
+		if (db_schema is not None or additional_searchpath is not None):
+			
+			if db_schema is None:
+				# db_schema = 'public'
+				searchpath = []
 			else:
-				if db_schema is None:
-					db_schema = 'public'
-				if additional_searchpath is None:
-					additional_searchpath = []
-				searchpath = [db_schema] + copy.deepcopy(additional_searchpath)
-				for s in searchpath:
-					for e in ('"',"'",';',','):
-						if e in s:
-							raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
+				searchpath = [db_schema]
+
+			if additional_searchpath is None:
+				additional_searchpath = []
+			if 'options' in self.db_conninfo.keys():
+				if not self.db_conninfo['options'].replace(' ','').startswith('-csearch_path'):
+					raise SyntaxError(f'''postgres connection options with unsupported format (only search path implemented in db_fillers): {self.db_conninfo['options']}''') 
+				self.logger.info(f'''Merging searchpath info from "options" parameter ({db_conninfo['options']}) and db_schema ({db_schema}) + additional_searchpath ({additional_searchpath})''')
+				# raise SyntaxError('You provided a schema and/or a search_path while also providing the "options" argument in the connection info string, resolving potential conflicts there is not implemented.')
+				orig_options = self.db_conninfo['options']
+				other_options = None
+				opt = orig_options
+				l = len('-c search_path=')
+				if opt.startswith('-c '):
+					opt = opt[l:]
+				else:
+					opt = opt[l-1:]
+				searchpath_options = opt.split(',') 
+			else:
+				searchpath_options = []
+
+			if len(searchpath_options) == 0:
 				temp_conninfo = copy.deepcopy(db_conninfo)
-				temp_conninfo.update(dict(data_folder=data_folder,db_schema=None,additional_searchpath=None,fallback_db=fallback_db,))
-				temp_db = self.__class__(**temp_conninfo)
-				temp_db.cursor.execute('SELECT schema_name FROM information_schema.schemata;')
-				schemas = [s for s in temp_db.cursor.fetchall()]
-				if db_schema not in schemas:
-					self.check_sqlname_safe(db_schema)
-					temp_db.cursor.execute('CREATE SCHEMA IF NOT EXISTS "{}";'.format(db_schema))
-					temp_db.connection.commit()
+				temp_conninfo.update(dict(data_folder=data_folder,db_schema=None,additional_searchpath=None,))
+				try:
+					temp_db = self.__class__(**temp_conninfo)
+					temp_db.cursor.execute('''SELECT UNNEST(STRING_TO_ARRAY(CURRENT_SETTING('search_path'),', '));''')
+					orig_searchpath = [r[0] for r in temp_db.cursor.fetchall()]
 					temp_db.connection.close()
-				self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s.replace('"','')) for s in searchpath])
+
+				except psycopg2.OperationalError as e:
+					temp_conninfo.update(dict(data_folder=data_folder,db_schema=None,additional_searchpath=None,database=fallback_db))
+					temp_db = self.__class__(**temp_conninfo)
+					
+					temp_db.cursor.execute('''SELECT UNNEST(STRING_TO_ARRAY(boot_val,', ')) FROM pg_settings WHERE name='search_path';''')
+					orig_searchpath = [r[0] for r in temp_db.cursor.fetchall()]
+					
+					temp_db.connection.close()
+			
+				searchpath += orig_searchpath
+			else:
+				searchpath += searchpath_options
+
+			searchpath += copy.deepcopy(additional_searchpath)
+			
+			for s in searchpath:
+				for e in ('"',"'",';',','):
+					if e in s:
+						raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
+
+			temp_searchpath = []
+			for s in searchpath:
+				if s not in temp_searchpath:
+					temp_searchpath.append(s)
+			searchpath = temp_searchpath
+			
+			self.db_conninfo['options'] = '-c search_path='+','.join(['"{}"'.format(s.replace('"','')) for s in searchpath])
+			
+			if other_options is not None:
+				self.db_conninfo['options'] += ' '+other_options
+			
+			
 
 		if 'password' in self.db_conninfo.keys():
 			logger.warning('You are providing your password directly, this could be a security concern, consider using solutions like .pgpass file.')
@@ -111,6 +156,13 @@ class Database(object):
 				else:
 					raise
 		self.cursor = self.connection.cursor()
+		if db_schema is not None:
+			self.cursor.execute('SELECT schema_name FROM information_schema.schemata;')
+			schemas = [s for s in self.cursor.fetchall()]
+			if db_schema not in schemas:
+				self.check_sqlname_safe(db_schema)
+				self.cursor.execute('CREATE SCHEMA IF NOT EXISTS "{}";'.format(db_schema))
+				self.connection.commit()
 
 		self.register_exec = register_exec
 
