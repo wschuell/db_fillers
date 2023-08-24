@@ -104,11 +104,14 @@ class Database(object):
 				searchpath += searchpath_options
 
 			searchpath += copy.deepcopy(additional_searchpath)
-			
+
+			searchpath = [s.replace('"','') for s in searchpath]
+						
 			for s in searchpath:
-				for e in ('"',"'",';',','):
+				for e in ("'",';',','):
 					if e in s:
 						raise ValueError('db_schema {} contains illegal char: {}'.format(s,e))
+
 
 			temp_searchpath = []
 			for s in searchpath:
