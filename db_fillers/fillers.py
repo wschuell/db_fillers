@@ -134,7 +134,7 @@ class Filler(object):
 		destination = os.path.join(self.data_folder,destination)
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
-		data = pd.read_excel(orig_file, index_col=None, engine=engine)
+		data = pd.read_excel(orig_file, index_col=None, engine=engine,header=None)
 		data.to_csv(destination,index=False,header=None ,encoding='utf-8')
 		if clean_orig:
 			os.remove(orig_file)
@@ -148,7 +148,7 @@ class Filler(object):
 			clean_sheet_names = {}
 		if engine is None:
 			engine = self.get_spreadsheet_engine(orig_file=orig_file)
-		data = pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names)
+		data = pd.read_excel(orig_file, index_col=None, engine=engine, sheet_name = sheet_names,header=None)
 
 		names = list(data.keys())
 		if destination is None:
@@ -161,7 +161,7 @@ class Filler(object):
 				out_name = clean_sheet_names[name]
 			else:
 				out_name = name
-			data[name].to_csv(os.path.join(destination,'{}.csv'.format(out_name)),index=False ,encoding='utf-8')
+			data[name].to_csv(os.path.join(destination,'{}.csv'.format(out_name)),index=False ,encoding='utf-8',header=None)
 
 		if clean_orig:
 			os.remove(orig_file)
