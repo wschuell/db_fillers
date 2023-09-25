@@ -206,6 +206,7 @@ class Database(object):
 
 
 	def fill_db(self):
+		self.register_filler_content(filler_class='fill_db',filler_args=None,status='start_fill_db')
 		for f in self.fillers:
 			if not f.done:
 				self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='init_prepare')
@@ -222,6 +223,7 @@ class Database(object):
 						f.done = True
 						self.register_filler_content(filler_class=f.__class__.__name__,filler_args=f.get_relevant_attr_string(),status='end_apply')
 			self.logger.info('Filled with filler {}'.format(f.name))
+		self.register_filler_content(filler_class='fill_db',filler_args=None,status='end_fill_db')
 
 	def add_filler(self,f):
 		if f.name in [ff.name for ff in self.fillers if ff.unique_name]:
