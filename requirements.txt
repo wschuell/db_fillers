@@ -1,4 +1,5 @@
 pyshp
+requests
 psycopg2-binary
 numpy>=1.16.5
 pandas
