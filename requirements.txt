@@ -7,6 +7,6 @@ geopandas
 shapely
 scipy
 matplotlib
-camelot-py[cv]
+# camelot-py[cv]
 odfpy
 pygit2
