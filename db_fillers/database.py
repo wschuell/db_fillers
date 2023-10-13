@@ -219,7 +219,7 @@ class Database(object):
         self.cursor = self.connection.cursor()
         if db_schema is not None:
             self.cursor.execute("SELECT schema_name FROM information_schema.schemata;")
-            schemas = [s for s in self.cursor.fetchall()]
+            schemas = [s[0] for s in self.cursor.fetchall() if s is not None]
             if db_schema not in schemas:
                 self.check_sqlname_safe(db_schema)
                 self.cursor.execute(
@@ -253,7 +253,7 @@ class Database(object):
     def get_tables(self):
         self.cursor.execute(
             """SELECT table_name FROM information_schema.tables
-			where table_schema=CURRENT_SCHEMA AND table_type='BASE TABLE'; """
+            where table_schema=CURRENT_SCHEMA AND table_type='BASE TABLE'; """
         )
         return [t[0] for t in self.cursor.fetchall()]
 
@@ -334,12 +334,12 @@ class Database(object):
     def record_file(self, filename, filecode, folder=None):
         self.cursor.execute(
             """CREATE TABLE IF NOT EXISTS file_hash(
-								filecode TEXT PRIMARY KEY,
-								filename TEXT,
-								hashtype TEXT DEFAULT 'SHA256',
-								updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-								filehash TEXT NOT NULL
-								);"""
+                                filecode TEXT PRIMARY KEY,
+                                filename TEXT,
+                                hashtype TEXT DEFAULT 'SHA256',
+                                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                                filehash TEXT NOT NULL
+                                );"""
         )
         self.connection.commit()
         if folder is None:
@@ -370,9 +370,9 @@ class Database(object):
             else:
                 self.cursor.execute(
                     """
-					INSERT INTO _exec_info(content,content_hash)
-					VALUES (%s,%s);
-					""",
+                    INSERT INTO _exec_info(content,content_hash)
+                    VALUES (%s,%s);
+                    """,
                     (exec_content, exec_hash),
                 )
                 self.connection.commit()
@@ -380,9 +380,9 @@ class Database(object):
     def register_filler_content(self, filler_class, filler_args, status):
         self.cursor.execute(
             """
-				INSERT INTO _fillers_info(class,args,status)
-				VALUES (%s,%s,%s);
-				""",
+                INSERT INTO _fillers_info(class,args,status)
+                VALUES (%s,%s,%s);
+                """,
             (filler_class, filler_args, status),
         )
         self.connection.commit()
