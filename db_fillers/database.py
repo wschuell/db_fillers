@@ -299,6 +299,7 @@ class Database(object):
                         )
                         f.apply()
                         f.done = True
+                        f.post_apply()
                         self.register_filler_content(
                             filler_class=f.__class__.__name__,
                             filler_args=f.get_relevant_attr_string(),
