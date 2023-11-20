@@ -48,11 +48,16 @@ class Getter(object):
             db = self.db
         if db is None:
             raise ValueError("please set a database to query from")
+        self.prepare()
         return self.get(db=db, **kwargs)
+
+    def prepare(self):
+        pass
 
     def get(self, db, raw_result=False, **kwargs):
         db.cursor.execute(self.query(), self.query_attributes())
         query_result = list(db.cursor.fetchall())
+        self.cleanup()
         if raw_result:
             return query_result
         else:
@@ -88,3 +93,9 @@ class Getter(object):
             plt.show()
         else:
             return ax
+
+    def cleanup(self):
+        """
+        In case some operations are needed after the query (e.g. dropping temp tables)
+        """
+        pass
