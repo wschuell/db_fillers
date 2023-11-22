@@ -256,6 +256,14 @@ class Filler(object):
     def post_apply(self):
         pass
 
+    def check_sql_safe(self, n, allow_chars=None):
+        if allow_chars is not None:
+            for c in allow_chars:
+                n = n.replace(c, "")
+        pattern = re.compile("^[a-zA-Z0-9_]+$")
+        if pattern.match(n) is None:
+            raise ValueError(f"{n} is not considered a safe SQL name")
+
 
 class TestFiller(Filler):
     """
