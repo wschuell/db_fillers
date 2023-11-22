@@ -11,6 +11,7 @@ import subprocess
 import shutil
 import pygit2
 import gzip
+import re
 
 logger = logging.getLogger("fillers")
 ch = logging.StreamHandler()
