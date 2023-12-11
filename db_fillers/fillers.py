@@ -48,8 +48,8 @@ class Filler(object):
             db.add_filler(self)
         self.data_folder = data_folder
         self.logger = logging.getLogger("fillers." + self.__class__.__name__)
-        self.logger.addHandler(ch)
-        self.logger.setLevel(logging.INFO)
+        # self.logger.addHandler(ch)
+        # self.logger.setLevel(logging.INFO)
         self.done = False
         self.unique_name = unique_name
         self.encoding = encoding
@@ -277,3 +277,72 @@ class TestFiller(Filler):
         filename = url.split("/")[-1]
         self.download(url)
         self.record_file(filename=filename, filecode="test_file")
+
+
+class FailingFiller(Filler):
+    """
+    A Filler just for testing purposes
+    """
+
+    def prepare(self, **kwargs):
+        raise Exception("Example exception")
+
+
+class CoalesceFiller(Filler):
+    """
+    A filler that runs subfillers until one does not fail at the prepare step
+    """
+
+    def not_implemented_submethods(self):
+        """
+        raising exceptions for methods of subfillers
+        """
+
+        raise NotImplementedError(
+            "This method is not implemented for fillers under a CoalesceFiller"
+        )
+
+    def __init__(self, fillers, **kwargs):
+        Filler.__init__(self, **kwargs)
+        self.fillers = []
+        for f in fillers:
+            f.after_insert = self.not_implemented_submethods
+            self.fillers.append(f)
+            self.logger.info("CoalesceFiller: Added filler {}".format(f.name))
+
+    def prepare(self):
+        errors = []
+        for f in self.fillers:
+            f.db = self.db
+            f.logger = self.logger
+            try:
+                f.prepare()
+            except Exception as e:
+                self.logger.info(
+                    f"CoalesceFiller: Failed filler {f.__class__.__name__}, switching to next"
+                )
+                errors.append(e)
+            else:
+                self.logger.info(
+                    f"CoalesceFiller: Prepared successfully filler {f.__class__.__name__}"
+                )
+                self.selected_filler = f
+                return
+        raise Exception(
+            f"Errors in prepare steps of CoalesceFiller:{[(e.__class__,str(e)) for e in errors]}"
+        )
+
+    def apply(self):
+        self.selected_filler.apply()
+
+    def post_apply(self):
+        self.selected_filler.post_apply()
+
+    def get_relevant_attr_string(self):
+        ans = f"""'fillers':{[(f.__class__.__name__,f.get_relevant_attr_string()) for f in self.fillers]}"""
+        if hasattr(self, "selected_filler"):
+            ans = (
+                f"""selected_filler: {self.selected_filler.__class__.__name__,self.selected_filler.get_relevant_attr_string()}, """
+                + ans
+            )
+        return ans

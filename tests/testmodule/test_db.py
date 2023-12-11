@@ -70,3 +70,50 @@ def test_download(tmpdir):
         destination="githublogo.png",
     )
     assert os.path.exists(os.path.join(f.data_folder, "githublogo.png"))
+
+
+def test_coalescefiller(maindb, tmpdir):
+    maindb.add_filler(
+        fillers.CoalesceFiller(
+            fillers=[
+                fillers.TestFiller(data_folder=tmpdir),
+                fillers.TestFiller(data_folder=tmpdir),
+                fillers.TestFiller(data_folder=tmpdir),
+            ]
+        )
+    )
+    maindb.fill_db()
+
+
+def test_coalescefiller2(maindb, tmpdir):
+    maindb.add_filler(
+        fillers.CoalesceFiller(
+            fillers=[
+                fillers.FailingFiller(data_folder=tmpdir),
+                fillers.TestFiller(data_folder=tmpdir),
+                fillers.FailingFiller(data_folder=tmpdir),
+                fillers.TestFiller(data_folder=tmpdir),
+            ]
+        )
+    )
+    maindb.fill_db()
+
+
+def test_coalescefiller3(maindb, tmpdir):
+    maindb.add_filler(
+        fillers.CoalesceFiller(
+            fillers=[
+                fillers.FailingFiller(data_folder=tmpdir),
+                fillers.FailingFiller(data_folder=tmpdir),
+                fillers.FailingFiller(data_folder=tmpdir),
+            ]
+        )
+    )
+    with pytest.raises(Exception):
+        maindb.fill_db()
+
+
+def test_coalescefiller4(maindb, tmpdir):
+    maindb.add_filler(fillers.CoalesceFiller(fillers=[]))
+    with pytest.raises(Exception):
+        maindb.fill_db()
