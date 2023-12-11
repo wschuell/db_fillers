@@ -115,5 +115,4 @@ def test_coalescefiller3(maindb, tmpdir):
 
 def test_coalescefiller4(maindb, tmpdir):
     maindb.add_filler(fillers.CoalesceFiller(fillers=[]))
-    with pytest.raises(Exception):
-        maindb.fill_db()
+    maindb.fill_db()

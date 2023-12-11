@@ -302,9 +302,10 @@ class CoalesceFiller(Filler):
             "This method is not implemented for fillers under a CoalesceFiller"
         )
 
-    def __init__(self, fillers, **kwargs):
+    def __init__(self, fillers, coalesce_apply=False, **kwargs):
         Filler.__init__(self, **kwargs)
         self.fillers = []
+        self.coalesce_apply = coalesce_apply
         for f in fillers:
             f.after_insert = self.not_implemented_submethods
             self.fillers.append(f)
@@ -319,24 +320,50 @@ class CoalesceFiller(Filler):
                 f.prepare()
             except Exception as e:
                 self.logger.info(
-                    f"CoalesceFiller: Failed filler {f.__class__.__name__}, switching to next"
+                    f"CoalesceFiller: Failed preparing filler {f.__class__.__name__}, switching to next"
                 )
                 errors.append(e)
             else:
                 self.logger.info(
                     f"CoalesceFiller: Prepared successfully filler {f.__class__.__name__}"
                 )
-                self.selected_filler = f
-                return
-        raise Exception(
-            f"Errors in prepare steps of CoalesceFiller:{[(e.__class__,str(e)) for e in errors]}"
-        )
+                if not self.coalesce_apply:
+                    self.selected_filler = f
+                    return
+        if not self.coalesce_apply and len(self.fillers):
+            raise Exception(
+                f"Errors in prepare steps of CoalesceFiller:{[(e.__class__,str(e)) for e in errors]}"
+            )
 
     def apply(self):
-        self.selected_filler.apply()
+        if not self.coalesce_apply:
+            if hasattr(self, "selected_filler"):
+                self.selected_filler.apply()
+        else:
+            errors = []
+            for f in self.fillers:
+                try:
+                    f.apply()
+                except Exception as e:
+                    self.logger.info(
+                        f"CoalesceFiller: Failed applying filler {f.__class__.__name__}, switching to next"
+                    )
+                    errors.append(e)
+                else:
+                    self.logger.info(
+                        f"CoalesceFiller: Applied successfully filler {f.__class__.__name__}"
+                    )
+                    if not self.coalesce_apply:
+                        self.selected_filler = f
+                        return
+            if len(self.fillers):
+                raise Exception(
+                    f"Errors in apply steps of CoalesceFiller:{[(e.__class__,str(e)) for e in errors]}"
+                )
 
     def post_apply(self):
-        self.selected_filler.post_apply()
+        if hasattr(self, "selected_filler"):
+            self.selected_filler.post_apply()
 
     def get_relevant_attr_string(self):
         ans = f"""'fillers':{[(f.__class__.__name__,f.get_relevant_attr_string()) for f in self.fillers]}"""
