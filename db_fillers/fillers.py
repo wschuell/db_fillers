@@ -344,6 +344,8 @@ class CoalesceFiller(Filler):
             for f in self.fillers:
                 try:
                     f.apply()
+                    f.done = True
+                    f.post_apply()
                 except Exception as e:
                     self.logger.info(
                         f"CoalesceFiller: Failed applying filler {f.__class__.__name__}, switching to next"
@@ -353,9 +355,8 @@ class CoalesceFiller(Filler):
                     self.logger.info(
                         f"CoalesceFiller: Applied successfully filler {f.__class__.__name__}"
                     )
-                    if not self.coalesce_apply:
-                        self.selected_filler = f
-                        return
+                    self.selected_filler = f
+                    return
             if len(self.fillers):
                 raise Exception(
                     f"Errors in apply steps of CoalesceFiller:{[(e.__class__,str(e)) for e in errors]}"
