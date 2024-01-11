@@ -307,15 +307,19 @@ class CoalesceFiller(Filler):
         self.fillers = []
         self.coalesce_apply = coalesce_apply
         for f in fillers:
-            f.after_insert = self.not_implemented_submethods
+            # f.after_insert = self.not_implemented_submethods
             self.fillers.append(f)
             self.logger.info("CoalesceFiller: Added filler {}".format(f.name))
+
+    def after_insert(self):
+        for f in self.fillers:
+            f.db = self.db
+            f.logger = self.logger
+            f.after_insert()
 
     def prepare(self):
         errors = []
         for f in self.fillers:
-            f.db = self.db
-            f.logger = self.logger
             try:
                 f.prepare()
             except Exception as e:
