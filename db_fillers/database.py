@@ -7,6 +7,7 @@ import csv
 import hashlib
 import numpy as np
 import inspect
+import uuid
 
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -54,8 +55,11 @@ class Database(object):
         additional_searchpath=["postgis"],
         DB_INIT=None,
         fallback_db="postgres",
+        cursor_name=None,
         **db_conninfo,
     ):
+        if cursor_name is None:
+            self.cursor_name = f"cursor_{uuid.uuid1()}"
         self.logger = logger
         self.db_conninfo = copy.deepcopy(
             db_conninfo
@@ -196,7 +200,7 @@ class Database(object):
                 )
                 conn = psycopg2.connect(**conninfo_nodb)
                 conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-                cur = conn.cursor()
+                cur = conn.cursor(name=self.cursor_name)
                 cur.execute(
                     psycopg2.sql.SQL("CREATE DATABASE {};").format(
                         psycopg2.sql.Identifier(self.db_conninfo["database"])
@@ -216,7 +220,7 @@ class Database(object):
                     self.connection = psycopg2.connect(**self.db_conninfo)
                 else:
                     raise
-        self.cursor = self.connection.cursor()
+        self.cursor = self.connection.cursor(name=self.cursor_name)
         if db_schema is not None:
             self.cursor.execute("SELECT schema_name FROM information_schema.schemata;")
             schemas = [s[0] for s in self.cursor.fetchall() if s is not None]
