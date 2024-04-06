@@ -388,3 +388,13 @@ class Database(object):
             (filler_class, filler_args, status),
         )
         self.connection.commit()
+
+    def execute_named_cursor(self, query, variables=None, prefix="", batch=False):
+        cursor_name = f"{prefix}_{uuid.uuid1()}"
+        with self.connection.cursor(name=cursor_name) as cur:
+            if batch:
+                extras.execute_batch(cur, query, variables)
+            else:
+                cur.execute(query, variables)
+            for result in cur.fetchall():
+                yield result
